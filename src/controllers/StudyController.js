@@ -74,7 +74,7 @@ export default class StudyController extends Controller {
     }
   }
 
-    async updateStudy(payload) {
+  async updateStudy(payload) {
     try {
       const currentDocRef = await super.readOne(COLLECTION, payload.id)
       

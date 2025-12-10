@@ -647,59 +647,52 @@ const onSubmit = async () => {
 
 const submit = async () => {
   const title = object.value.testTitle;
-  if (title.length > 0 && title.length < 200) {
-    loading.value = true;
-    try {
-      const original = store.getters.test;
-      const updates = { 
-        id: props.id, 
-        updateDate: original.updateDate 
-      };
-      
-      let hasChanges = false;
-
-      if (object.value.testTitle !== original.testTitle) {
-        updates.testTitle = object.value.testTitle;
-        hasChanges = true;
-      }
-      if (object.value.testDescription !== original.testDescription) {
-        updates.testDescription = object.value.testDescription;
-        hasChanges = true;
-      }
-      if (object.value.isPublic !== original.isPublic) {
-        updates.isPublic = object.value.isPublic;
-        hasChanges = true;
-      }
-      if (object.value.status !== original.status) {
-        updates.status = object.value.status;
-        hasChanges = true;
-      }
-      if (object.value.endDate !== original.endDate) {
-        updates.endDate = object.value.endDate;
-        hasChanges = true;
-      }
-
-      if (!hasChanges) {
-        toast.info(t('alerts.noChanges'));
-        loading.value = false;
-        return;
-      }
-
-      console.log('Saving partial update:', updates);
-      await store.dispatch('updateStudy', updates);
-      await store.dispatch('getStudy', { id: props.id });
-      store.commit('SET_LOCAL_CHANGES', false);
-      toast.success(t('alerts.savedChanges'));
-    } catch (error) {
-      toast.error(t('errors.globalError'));
-      console.error('Error saving test:', error);
-    } finally {
-      loading.value = false;
-    }
-  } else if (title.length >= 200) {
-    toast.warning(t('studyCreation.details.validation.max200Characters'));
-  } else {
+  
+  if (!title || title.trim().length === 0) {
     toast.warning(t('studyCreation.details.validation.enterTitle'));
+    return;
+  }
+  
+  if (title.length >= 200) {
+    toast.warning(t('studyCreation.details.validation.max200Characters'));
+    return;
+  }
+
+  loading.value = true;
+  try {
+    // Create partial update object (Diff)
+    const original = store.getters.test;
+    const updates = { 
+      id: props.id, 
+      updateDate: original.updateDate // Required for concurrency check
+    };
+    
+    // Check fields for changes
+    const fieldsToCheck = ['testTitle', 'testDescription', 'isPublic', 'status', 'endDate'];
+    let hasChanges = false;
+
+    fieldsToCheck.forEach(field => {
+      if (object.value[field] !== original[field]) {
+        updates[field] = object.value[field];
+        hasChanges = true;
+      }
+    });
+
+    if (!hasChanges) {
+      toast.info(t('alerts.noChanges'));
+      return;
+    }
+
+    console.log('Saving partial update:', updates);
+    await store.dispatch('updateStudy', updates);
+    await store.dispatch('getStudy', { id: props.id });
+    store.commit('SET_LOCAL_CHANGES', false);
+    toast.success(t('alerts.savedChanges'));
+  } catch (error) {
+    toast.error(t('errors.globalError'));
+    console.error('Error saving test:', error);
+  } finally {
+    loading.value = false;
   }
 };
 
